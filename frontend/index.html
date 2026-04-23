@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>TaskForge</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/date-fns/2.30.0/date_fns.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0a0b;--s1:#111114;--s2:#18181d;--s3:#1f1f26;
+  --b1:#2a2a35;--b2:#3a3a48;
+  --t1:#e8e8f0;--t2:#9090a8;--t3:#5a5a70;
+  --ac:#7fff6a;--ac2:rgba(127,255,106,.12);--acb:rgba(127,255,106,.3);
+  --red:#ff4d6a;--ora:#ff8c42;--yel:#ffd166;--blu:#4d9fff;--pur:#b06dff;
+  --r:4px;--r2:8px;--tr:150ms ease;
+  --mono:'Space Mono',monospace;--sans:'DM Sans',sans-serif;
+}
+html,body,#root{height:100%}
+body{background:var(--bg);color:var(--t1);font-family:var(--sans);font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:var(--s1)}::-webkit-scrollbar-thumb{background:var(--b2);border-radius:2px}
+h1,h2,h3{font-family:var(--mono);font-weight:700;line-height:1.2}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--r);font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;cursor:pointer;border:none;transition:var(--tr);text-decoration:none;white-space:nowrap}
+.btn-p{background:var(--ac);color:#0a0a0b}.btn-p:hover{background:#6dee5a;transform:translateY(-1px)}
+.btn-g{background:transparent;color:var(--t2);border:1px solid var(--b1)}.btn-g:hover{border-color:var(--b2);color:var(--t1)}
+.btn-d{background:transparent;color:var(--red);border:1px solid rgba(255,77,106,.3)}.btn-d:hover{background:rgba(255,77,106,.1)}
+.btn-sm{padding:5px 10px;font-size:10px}.btn-ico{padding:7px;border-radius:var(--r)}
+.btn:disabled{opacity:.5;cursor:not-allowed;transform:none!important}
+
+/* Inputs */
+.inp{width:100%;padding:10px 12px;background:var(--s2);border:1px solid var(--b1);border-radius:var(--r);color:var(--t1);font-family:var(--sans);font-size:14px;transition:var(--tr);outline:none}
+.inp:focus{border-color:var(--ac);box-shadow:0 0 0 3px var(--ac2)}
+.inp::placeholder{color:var(--t3)}
+select.inp{cursor:pointer}
+
+/* Badge */
+.badge{display:inline-flex;align-items:center;padding:2px 7px;border-radius:2px;font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase}
+.s-backlog{background:rgba(90,90,112,.2);color:var(--t3);border:1px solid var(--b1)}
+.s-todo{background:rgba(77,159,255,.15);color:var(--blu);border:1px solid rgba(77,159,255,.3)}
+.s-in_progress{background:rgba(255,209,102,.15);color:var(--yel);border:1px solid rgba(255,209,102,.3)}
+.s-in_review{background:rgba(176,109,255,.15);color:var(--pur);border:1px solid rgba(176,109,255,.3)}
+.s-done{background:rgba(127,255,106,.15);color:var(--ac);border:1px solid var(--acb)}
+.s-cancelled{background:rgba(255,77,106,.1);color:var(--red);border:1px solid rgba(255,77,106,.2)}
+
+/* Layout */
+.shell{display:grid;grid-template-columns:210px 1fr;height:100vh;overflow:hidden}
+.sidebar{background:var(--s1);border-right:1px solid var(--b1);display:flex;flex-direction:column;padding:20px 0;overflow-y:auto}
+.logo{padding:0 20px 20px;border-bottom:1px solid var(--b1);margin-bottom:12px}
+.logo-txt{font-family:var(--mono);font-size:15px;font-weight:700;display:flex;align-items:center;gap:6px}
+.logo-txt span{color:var(--ac)}
+.org-nm{font-size:11px;color:var(--t3);margin-top:3px;font-family:var(--mono);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nav{flex:1;padding:0 8px}
+.nav-lbl{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--t3);padding:0 10px;margin:12px 0 4px}
+.nav-i{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:var(--r);color:var(--t2);text-decoration:none;font-size:13px;font-weight:500;transition:var(--tr);cursor:pointer;border:none;background:transparent;width:100%;text-align:left}
+.nav-i:hover{background:var(--s2);color:var(--t1)}
+.nav-i.active{background:var(--ac2);color:var(--ac);border:1px solid var(--acb)}
+.sidebar-foot{padding:12px 8px 0;border-top:1px solid var(--b1)}
+.u-chip{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:var(--r);cursor:pointer;transition:var(--tr)}
+.u-chip:hover{background:var(--s2)}
+.av{width:28px;height:28px;border-radius:50%;background:var(--s3);border:1px solid var(--b2);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:11px;font-weight:700;color:var(--ac);flex-shrink:0;overflow:hidden}
+.av img{width:100%;height:100%;object-fit:cover}
+.u-name{font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.u-role{font-family:var(--mono);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--t3)}
+.u-role.owner{color:var(--ac)}.u-role.admin{color:var(--yel)}
+.main{display:flex;flex-direction:column;overflow:hidden}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:16px 24px;border-bottom:1px solid var(--b1);background:var(--s1);flex-shrink:0}
+.page-title{font-family:var(--mono);font-size:17px}
+.page-sub{font-size:11px;color:var(--t3);margin-top:2px}
+.content{flex:1;overflow-y:auto;padding:20px 24px}
+
+/* Stats */
+.stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-bottom:20px}
+.stat{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);padding:14px}
+.stat-v{font-family:var(--mono);font-size:26px;font-weight:700}
+.stat-l{font-family:var(--mono);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--t3);margin-top:4px}
+.stat.ac{border-color:var(--acb);background:var(--ac2)}.stat.ac .stat-v{color:var(--ac)}
+.stat.red{border-color:rgba(255,77,106,.4);background:rgba(255,77,106,.05)}.stat.red .stat-v{color:var(--red)}
+
+/* Filters */
+.filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
+.chip{padding:4px 10px;border-radius:2px;font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;background:var(--s2);border:1px solid var(--b1);color:var(--t2);cursor:pointer;transition:var(--tr)}
+.chip:hover{border-color:var(--b2);color:var(--t1)}
+.chip.on{border-color:var(--ac);color:var(--ac);background:var(--ac2)}
+
+/* Table */
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;padding:8px 10px;font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--t3);border-bottom:1px solid var(--b1)}
+td{padding:11px 10px;border-bottom:1px solid var(--b1);vertical-align:middle}
+.t-row{transition:var(--tr);cursor:pointer}
+.t-row:hover td{background:var(--s2)}
+.t-row:last-child td{border-bottom:none}
+
+/* Modal */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.8);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px;animation:fi 150ms ease}
+@keyframes fi{from{opacity:0}to{opacity:1}}
+.modal{background:var(--s1);border:1px solid var(--b2);border-radius:var(--r2);padding:24px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;animation:su 200ms ease}
+@keyframes su{from{transform:translateY(16px);opacity:0}to{transform:none;opacity:1}}
+.m-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.m-title{font-family:var(--mono);font-size:15px}
+.fg{margin-bottom:14px}
+.fl{display:block;margin-bottom:5px;font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--t3)}
+.fr{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.fa{display:flex;gap:8px;justify-content:flex-end;margin-top:20px}
+
+/* Auth */
+.auth-page{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg)}
+.auth-card{width:100%;max-width:400px;background:var(--s1);border:1px solid var(--b2);border-radius:var(--r2);padding:36px}
+.auth-logo{font-family:var(--mono);font-size:20px;font-weight:700;text-align:center;margin-bottom:6px}
+.auth-logo span{color:var(--ac)}
+.auth-sub{text-align:center;color:var(--t3);font-size:12px;margin-bottom:28px}
+.auth-div{display:flex;align-items:center;gap:10px;margin:16px 0;color:var(--t3);font-size:12px}
+.auth-div::before,.auth-div::after{content:'';flex:1;height:1px;background:var(--b1)}
+.auth-sw{text-align:center;margin-top:16px;font-size:12px;color:var(--t3)}
+.auth-sw a{color:var(--ac);text-decoration:none;font-weight:600;cursor:pointer}
+.oauth-btn{width:100%;padding:9px;background:var(--s2);border:1px solid var(--b2);border-radius:var(--r);color:var(--t1);font-family:var(--sans);font-size:13px;font-weight:500;cursor:pointer;transition:var(--tr);display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:8px;text-decoration:none}
+.oauth-btn:hover{background:var(--s3)}
+
+/* Members */
+.members{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px}
+.m-card{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);padding:14px;display:flex;align-items:center;gap:10px}
+.m-info{flex:1;min-width:0}
+.m-name{font-weight:600;font-size:13px}
+.m-email{font-size:11px;color:var(--t3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* Audit */
+.audit-i{display:flex;gap:10px;padding:11px 0;border-bottom:1px solid var(--b1)}
+.audit-i:last-child{border-bottom:none}
+.a-dot{width:7px;height:7px;border-radius:50%;background:var(--ac);flex-shrink:0;margin-top:7px}
+.a-act{font-family:var(--mono);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--ac)}
+.a-desc{font-size:13px;margin-top:2px}
+.a-time{font-family:var(--mono);font-size:10px;color:var(--t3);margin-top:3px}
+
+/* Card */
+.card{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r2);padding:18px}
+
+/* Misc */
+.spin{width:16px;height:16px;border-radius:50%;border:2px solid var(--b2);border-top-color:var(--ac);animation:sp .6s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.empty{text-align:center;padding:60px 20px;color:var(--t3)}
+.empty h3{font-family:var(--mono);font-size:14px;color:var(--t2);margin-bottom:6px}
+.toast{position:fixed;bottom:20px;right:20px;z-index:999;display:flex;flex-direction:column;gap:6px}
+.toast-i{padding:10px 16px;border-radius:var(--r);font-family:var(--mono);font-size:11px;font-weight:700;animation:fi .2s ease;display:flex;align-items:center;gap:8px}
+.toast-ok{background:#0f2d0a;border:1px solid var(--acb);color:var(--ac)}
+.toast-err{background:#2d0a0a;border:1px solid rgba(255,77,106,.4);color:var(--red)}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<div id="toast-root"></div>
+
+<script type="text/babel">
+const {useState, useEffect, useCallback, useContext, createContext, useRef} = React;
+
+// ─── Toast ────────────────────────────────────────────────────────────────────
+const toasts = [];
+let toastSetter = null;
+const toast = {
+  ok: msg => fire(msg, 'ok'),
+  err: msg => fire(msg, 'err'),
+};
+function fire(msg, type) {
+  const id = Date.now();
+  toasts.push({id, msg, type});
+  toastSetter?.([...toasts]);
+  setTimeout(() => { const i = toasts.findIndex(t => t.id === id); if(i>-1){toasts.splice(i,1); toastSetter?.([...toasts]);} }, 3000);
+}
+function Toasts() {
+  const [list, setList] = useState([]);
+  useEffect(() => { toastSetter = setList; return () => { toastSetter = null; }; }, []);
+  return ReactDOM.createPortal(
+    <div className="toast">{list.map(t => <div key={t.id} className={`toast-i toast-${t.type}`}>{t.type==='ok'?'✓':'✗'} {t.msg}</div>)}</div>,
+    document.getElementById('toast-root')
+  );
+}
+
+// ─── API ──────────────────────────────────────────────────────────────────────
+const api = async (method, path, body) => {
+  const token = localStorage.getItem('tf_token');
+  const opts = {
+    method,
+    headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+    ...(body ? { body: JSON.stringify(body) } : {})
+  };
+  let res = await fetch('/api' + path, opts);
+  if (res.status === 401 && localStorage.getItem('tf_refresh')) {
+    const r = await fetch('/api/auth/refresh', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ refreshToken: localStorage.getItem('tf_refresh') }) });
+    if (r.ok) {
+      const d = await r.json();
+      localStorage.setItem('tf_token', d.accessToken);
+      localStorage.setItem('tf_refresh', d.refreshToken);
+      opts.headers.Authorization = `Bearer ${d.accessToken}`;
+      res = await fetch('/api' + path, opts);
+    } else { localStorage.clear(); window.location.href = '/'; return; }
+  }
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.message || 'Request failed');
+  return data;
+};
+const get = p => api('GET', p);
+const post = (p, b) => api('POST', p, b);
+const patch = (p, b) => api('PATCH', p, b);
+const del = p => api('DELETE', p);
+
+// ─── Auth Context ─────────────────────────────────────────────────────────────
+const Auth = createContext(null);
+const useAuth = () => useContext(Auth);
+const ROLES = { owner: 4, admin: 3, member: 2, viewer: 1 };
+
+function AuthProvider({ children }) {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  const fetchMe = useCallback(async () => {
+    try { const d = await get('/auth/me'); setUser(d.user); }
+    catch { localStorage.removeItem('tf_token'); localStorage.removeItem('tf_refresh'); setUser(null); }
+    finally { setLoading(false); }
+  }, []);
+
+  useEffect(() => { localStorage.getItem('tf_token') ? fetchMe() : setLoading(false); }, []);
+
+  const login = async (email, password) => {
+    const d = await post('/auth/login', { email, password });
+    localStorage.setItem('tf_token', d.accessToken); localStorage.setItem('tf_refresh', d.refreshToken);
+    setUser(d.user);
+  };
+  const register = async (name, email, password, orgName) => {
+    const d = await post('/auth/register', { name, email, password, orgName });
+    localStorage.setItem('tf_token', d.accessToken); localStorage.setItem('tf_refresh', d.refreshToken);
+    setUser(d.user);
+  };
+  const logout = async () => {
+    try { await post('/auth/logout'); } catch {}
+    localStorage.clear(); setUser(null);
+  };
+  const isAdmin = ROLES[user?.role] >= ROLES.admin;
+  const isOwner = user?.role === 'owner';
+  return <Auth.Provider value={{ user, loading, login, register, logout, isAdmin, isOwner, refetch: fetchMe }}>{children}</Auth.Provider>;
+}
+
+// ─── Router (tiny hash router) ────────────────────────────────────────────────
+function useRoute() {
+  const [path, setPath] = useState(window.location.hash.slice(1) || '/tasks');
+  useEffect(() => {
+    const h = () => setPath(window.location.hash.slice(1) || '/tasks');
+    window.addEventListener('hashchange', h); return () => window.removeEventListener('hashchange', h);
+  }, []);
+  return [path, (p) => { window.location.hash = p; }];
+}
+
+// ─── Icons (inline SVG) ───────────────────────────────────────────────────────
+const IC = {
+  zap: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>,
+  check: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/><polyline points="9 11 12 14 22 4"/></svg>,
+  users: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
+  log: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>,
+  cog: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>,
+  out: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>,
+  plus: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>,
+  x: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>,
+  edit: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>,
+  trash: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>,
+};
+
+// ─── Task Modal ───────────────────────────────────────────────────────────────
+function TaskModal({ task, members, onClose, onSave }) {
+  const [f, setF] = useState({
+    title: task?.title||'', description: task?.description||'',
+    status: task?.status||'todo', priority: task?.priority||'medium',
+    assignedTo: task?.assignedTo?._id||task?.assignedTo||'',
+    dueDate: task?.dueDate?task.dueDate.slice(0,10):'',
+    estimatedHours: task?.estimatedHours||'',
+    labels: task?.labels?.join(', ')||'',
+  });
+  const [saving, setSaving] = useState(false);
+  const s = (k,v) => setF(p=>({...p,[k]:v}));
+
+  useEffect(() => {
+    const h = e => e.key==='Escape' && onClose();
+    window.addEventListener('keydown', h); return () => window.removeEventListener('keydown', h);
+  }, []);
+
+  const submit = async () => {
+    if (!f.title.trim()) return;
+    setSaving(true);
+    try {
+      await onSave({ ...f, labels: f.labels?f.labels.split(',').map(l=>l.trim()).filter(Boolean):[], estimatedHours: f.estimatedHours?+f.estimatedHours:undefined, assignedTo: f.assignedTo||undefined, dueDate: f.dueDate||undefined });
+      onClose();
+    } catch(e){ toast.err(e.message); } finally { setSaving(false); }
+  };
+
+  return (
+    <div className="overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="modal">
+        <div className="m-hdr"><h2 className="m-title">{task?'Edit Task':'New Task'}</h2><button className="btn btn-ico btn-g" onClick={onClose}>{IC.x}</button></div>
+        <div className="fg"><label className="fl">Title *</label><input className="inp" value={f.title} onChange={e=>s('title',e.target.value)} placeholder="Task title..." autoFocus/></div>
+        <div className="fg"><label className="fl">Description</label><textarea className="inp" value={f.description} onChange={e=>s('description',e.target.value)} placeholder="Optional..." rows={2} style={{resize:'vertical'}}/></div>
+        <div className="fr">
+          <div className="fg"><label className="fl">Status</label>
+            <select className="inp" value={f.status} onChange={e=>s('status',e.target.value)}>
+              {['backlog','todo','in_progress','in_review','done','cancelled'].map(v=><option key={v} value={v}>{v.replace('_',' ')}</option>)}
+            </select></div>
+          <div className="fg"><label className="fl">Priority</label>
+            <select className="inp" value={f.priority} onChange={e=>s('priority',e.target.value)}>
+              {['low','medium','high','critical'].map(v=><option key={v} value={v}>{v}</option>)}
+            </select></div>
+        </div>
+        <div className="fr">
+          <div className="fg"><label className="fl">Assign To</label>
+            <select className="inp" value={f.assignedTo} onChange={e=>s('assignedTo',e.target.value)}>
+              <option value="">Unassigned</option>
+              {(members||[]).map(m=><option key={m._id} value={m._id}>{m.name}</option>)}
+            </select></div>
+          <div className="fg"><label className="fl">Due Date</label><input type="date" className="inp" value={f.dueDate} onChange={e=>s('dueDate',e.target.value)}/></div>
+        </div>
+        <div className="fr">
+          <div className="fg"><label className="fl">Est. Hours</label><input type="number" className="inp" value={f.estimatedHours} onChange={e=>s('estimatedHours',e.target.value)} placeholder="e.g. 4" min="0" step="0.5"/></div>
+          <div className="fg"><label className="fl">Labels (comma-sep)</label><input className="inp" value={f.labels} onChange={e=>s('labels',e.target.value)} placeholder="bug, urgent"/></div>
+        </div>
+        <div className="fa">
+          <button className="btn btn-g" onClick={onClose}>Cancel</button>
+          <button className="btn btn-p" onClick={submit} disabled={saving||!f.title.trim()}>{saving?<span className="spin"/>:null}{task?'Save':'Create'}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Pages ────────────────────────────────────────────────────────────────────
+const PRIO = {critical:'🔴',high:'🟠',medium:'🟡',low:'⚪'};
+const ACOLOR = { 'task.created':'var(--ac)','task.updated':'var(--blu)','task.deleted':'var(--red)','task.status_changed':'var(--yel)','user.invited':'var(--ac)','user.role_changed':'var(--ora)','user.removed':'var(--red)' };
+
+function TasksPage() {
+  const { user, isAdmin } = useAuth();
+  const [tasks, setTasks] = useState([]);
+  const [stats, setStats] = useState({byStatus:[],overdue:0});
+  const [members, setMembers] = useState([]);
+  const [filter, setFilter] = useState('all');
+  const [modal, setModal] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [td, sd, md] = await Promise.all([get('/tasks'+(filter!=='all'?`?status=${filter}`:'')), get('/tasks/stats'), get('/org/members')]);
+      setTasks(td.tasks); setStats(sd); setMembers(md.members);
+    } catch(e){ toast.err(e.message); } finally { setLoading(false); }
+  }, [filter]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const save = async (payload) => {
+    if (modal==='new') { await post('/tasks', payload); toast.ok('Task created'); }
+    else { await patch(`/tasks/${modal._id}`, payload); toast.ok('Task updated'); }
+    load();
+  };
+
+  const remove = async (task, e) => {
+    e.stopPropagation();
+    if (!confirm(`Delete "${task.title}"?`)) return;
+    try { await del(`/tasks/${task._id}`); toast.ok('Deleted'); load(); } catch(e){ toast.err(e.message); }
+  };
+
+  const canEdit = t => isAdmin || t.createdBy?._id===user._id || t.createdBy===user._id;
+  const total = stats.byStatus.reduce((a,s)=>a+s.count,0);
+  const done = stats.byStatus.find(s=>s._id==='done')?.count||0;
+  const inP = stats.byStatus.find(s=>s._id==='in_progress')?.count||0;
+
+  return <>
+    <div className="topbar">
+      <div><h1 className="page-title">Tasks</h1><div className="page-sub">{tasks.length} shown · {user.organization?.name}</div></div>
+      <button className="btn btn-p" onClick={()=>setModal('new')}>{IC.plus} New Task</button>
+    </div>
+    <div className="content">
+      <div className="stats">
+        <div className="stat"><div className="stat-v">{total}</div><div className="stat-l">Total</div></div>
+        <div className="stat ac"><div className="stat-v">{done}</div><div className="stat-l">Done</div></div>
+        <div className="stat"><div className="stat-v">{inP}</div><div className="stat-l">In Progress</div></div>
+        <div className={`stat ${stats.overdue>0?'red':''}`}><div className="stat-v">{stats.overdue}</div><div className="stat-l">Overdue</div></div>
+      </div>
+      <div className="filters">
+        {['all','backlog','todo','in_progress','in_review','done','cancelled'].map(s=>(
+          <button key={s} className={`chip${filter===s?' on':''}`} onClick={()=>setFilter(s)}>
+            {s==='all'?'All':s.replace('_',' ')}
+          </button>
+        ))}
+      </div>
+      {loading ? <div style={{display:'flex',justifyContent:'center',padding:60}}><div className="spin" style={{width:32,height:32}}/></div>
+      : tasks.length===0 ? <div className="empty"><h3>No tasks found</h3><p>Create your first task.</p></div>
+      : <div className="tbl-wrap"><table>
+          <thead><tr><th>Task</th><th>Status</th><th>Priority</th><th>Assignee</th><th>Due</th><th></th></tr></thead>
+          <tbody>{tasks.map(t=>(
+            <tr key={t._id} className="t-row" onClick={()=>canEdit(t)&&setModal(t)}>
+              <td style={{maxWidth:280}}>
+                <div style={{fontWeight:600,fontSize:13}}>{t.title}</div>
+                {t.labels?.length>0&&<div style={{display:'flex',gap:3,marginTop:3,flexWrap:'wrap'}}>{t.labels.map(l=><span key={l} className="badge" style={{background:'var(--s3)',color:'var(--t3)',border:'1px solid var(--b1)'}}>{l}</span>)}</div>}
+                <div style={{fontSize:10,color:'var(--t3)',fontFamily:'var(--mono)',marginTop:2}}>by {t.createdBy?.name||'?'}</div>
+              </td>
+              <td><span className={`badge s-${t.status}`}>{t.status.replace('_',' ')}</span></td>
+              <td><span style={{fontFamily:'var(--mono)',fontSize:11}}>{PRIO[t.priority]} {t.priority}</span></td>
+              <td style={{fontSize:12}}>{t.assignedTo?.name||<span style={{color:'var(--t3)'}}>—</span>}</td>
+              <td style={{fontFamily:'var(--mono)',fontSize:11,color: t.dueDate&&new Date(t.dueDate)<new Date()&&t.status!=='done'?'var(--red)':'var(--t3)'}}>
+                {t.dueDate?dateFns.format(new Date(t.dueDate),'MMM d'):'—'}
+              </td>
+              <td onClick={e=>e.stopPropagation()}>
+                {canEdit(t)&&<div style={{display:'flex',gap:3}}>
+                  <button className="btn btn-ico btn-g btn-sm" onClick={()=>setModal(t)}>{IC.edit}</button>
+                  <button className="btn btn-ico btn-d btn-sm" onClick={e=>remove(t,e)}>{IC.trash}</button>
+                </div>}
+              </td>
+            </tr>
+          ))}</tbody>
+        </table></div>}
+    </div>
+    {modal&&<TaskModal task={modal==='new'?null:modal} members={members} onClose={()=>setModal(null)} onSave={save}/>}
+  </>;
+}
+
+function MembersPage() {
+  const { user, isAdmin, isOwner } = useAuth();
+  const [members, setMembers] = useState([]);
+  const [showInv, setShowInv] = useState(false);
+  const [inv, setInv] = useState({name:'',email:'',role:'member'});
+  const [loading, setLoading] = useState(true);
+
+  const load = async () => { setLoading(true); try { const d = await get('/org/members'); setMembers(d.members); } catch(e){toast.err(e.message);} finally{setLoading(false);} };
+  useEffect(()=>{ load(); },[]);
+
+  const invite = async () => {
+    try { await post('/org/invite', inv); toast.ok('Invited'); setShowInv(false); setInv({name:'',email:'',role:'member'}); load(); }
+    catch(e){ toast.err(e.message); }
+  };
+  const changeRole = async (id, role) => { try { await patch(`/org/members/${id}/role`,{role}); toast.ok('Role updated'); load(); } catch(e){toast.err(e.message);} };
+  const remove = async (m) => { if(!confirm(`Remove ${m.name}?`)) return; try { await del(`/org/members/${m._id}`); toast.ok('Removed'); load(); } catch(e){toast.err(e.message);} };
+
+  return <>
+    <div className="topbar">
+      <div><h1 className="page-title">Members</h1><div className="page-sub">{members.length} in org</div></div>
+      {isAdmin&&<button className="btn btn-p" onClick={()=>setShowInv(true)}>{IC.plus} Invite</button>}
+    </div>
+    <div className="content">
+      {loading?<div style={{display:'flex',justifyContent:'center',padding:60}}><div className="spin" style={{width:32,height:32}}/></div>
+      :<div className="members">{members.map(m=>{
+        const init=m.name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase();
+        const isSelf=m._id===user._id, isOwnerTarget=m.role==='owner';
+        return <div key={m._id} className="m-card">
+          <div className="av">{m.avatar?<img src={m.avatar} alt={m.name}/>:init}</div>
+          <div className="m-info">
+            <div className="m-name">{m.name}{isSelf&&<span style={{color:'var(--t3)',fontSize:10}}> (you)</span>}</div>
+            <div className="m-email">{m.email}</div>
+            <div style={{marginTop:4}}><span className="badge" style={{background:'var(--s3)',color:'var(--t2)',border:'1px solid var(--b1)'}}>{m.role}</span></div>
+          </div>
+          {!isSelf&&!isOwnerTarget&&isAdmin&&<div style={{display:'flex',flexDirection:'column',gap:4}}>
+            <select className="inp" style={{padding:'3px 6px',width:'auto',fontSize:11}} value={m.role} onChange={e=>changeRole(m._id,e.target.value)}>
+              {['viewer','member','admin'].map(r=><option key={r} value={r}>{r}</option>)}
+            </select>
+            {isOwner&&<button className="btn btn-d btn-sm" onClick={()=>remove(m)}>Remove</button>}
+          </div>}
+        </div>;
+      })}</div>}
+    </div>
+    {showInv&&<div className="overlay" onClick={e=>e.target===e.currentTarget&&setShowInv(false)}>
+      <div className="modal" style={{maxWidth:380}}>
+        <div className="m-hdr"><h2 className="m-title">Invite Member</h2><button className="btn btn-ico btn-g" onClick={()=>setShowInv(false)}>{IC.x}</button></div>
+        <div className="fg"><label className="fl">Name</label><input className="inp" value={inv.name} onChange={e=>setInv(i=>({...i,name:e.target.value}))} placeholder="Full name" autoFocus/></div>
+        <div className="fg"><label className="fl">Email</label><input type="email" className="inp" value={inv.email} onChange={e=>setInv(i=>({...i,email:e.target.value}))} placeholder="user@example.com"/></div>
+        <div className="fg"><label className="fl">Role</label><select className="inp" value={inv.role} onChange={e=>setInv(i=>({...i,role:e.target.value}))}>{['viewer','member','admin'].map(r=><option key={r} value={r}>{r}</option>)}</select></div>
+        <div className="fa"><button className="btn btn-g" onClick={()=>setShowInv(false)}>Cancel</button><button className="btn btn-p" onClick={invite} disabled={!inv.email||!inv.name}>Invite</button></div>
+      </div>
+    </div>}
+  </>;
+}
+
+function AuditPage() {
+  const [logs, setLogs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  useEffect(()=>{ get('/org/audit').then(d=>{setLogs(d.logs);setLoading(false);}).catch(e=>{toast.err(e.message);setLoading(false);}); },[]);
+  const desc = l => {
+    const r = l.resourceTitle?`"${l.resourceTitle}"`:l.resourceType;
+    const map = {'task.created':`created task ${r}`,'task.updated':`updated ${r}`,'task.deleted':`deleted ${r}`,'task.status_changed':`changed status of ${r}`,'user.invited':`invited ${r}`,'user.role_changed':`changed role of ${r}`,'user.removed':`removed ${r}`};
+    return map[l.action]||l.action;
+  };
+  return <>
+    <div className="topbar"><div><h1 className="page-title">Audit Log</h1><div className="page-sub">Full activity trail</div></div></div>
+    <div className="content">
+      {loading?<div style={{display:'flex',justifyContent:'center',padding:60}}><div className="spin" style={{width:32,height:32}}/></div>
+      :logs.length===0?<div className="empty"><h3>No activity yet</h3></div>
+      :<div className="card">{logs.map(l=>(
+        <div key={l._id} className="audit-i">
+          <div className="a-dot" style={{background:ACOLOR[l.action]||'var(--t3)'}}/>
+          <div>
+            <div style={{display:'flex',alignItems:'center',gap:6}}>
+              <span className="a-act" style={{color:ACOLOR[l.action]||'var(--t3)'}}>{l.action}</span>
+              <span className="badge" style={{background:'var(--s2)',color:'var(--t3)',border:'1px solid var(--b1)'}}>{l.resourceType}</span>
+            </div>
+            <div className="a-desc"><strong style={{color:'var(--t1)'}}>{l.actorName}</strong> {desc(l)}</div>
+            {l.changes?.before&&l.changes?.after&&<div style={{marginTop:4,display:'flex',gap:8,flexWrap:'wrap'}}>
+              {Object.keys(l.changes.after).slice(0,3).map(k=>(
+                <span key={k} style={{fontSize:10,fontFamily:'var(--mono)',color:'var(--t3)'}}>
+                  {k}: <span style={{color:'var(--red)',textDecoration:'line-through'}}>{String(l.changes.before[k]??'—')}</span> → <span style={{color:'var(--ac)'}}>{String(l.changes.after[k]??'—')}</span>
+                </span>
+              ))}
+            </div>}
+            <div className="a-time">{dateFns.formatDistanceToNow(new Date(l.createdAt),{addSuffix:true})} · {l.actorRole}</div>
+          </div>
+        </div>
+      ))}</div>}
+    </div>
+  </>;
+}
+
+function SettingsPage() {
+  const { user, isAdmin, refetch } = useAuth();
+  const [orgName, setOrgName] = useState(user?.organization?.name||'');
+  const [saving, setSaving] = useState(false);
+  const save = async () => { setSaving(true); try { await patch('/org',{name:orgName}); toast.ok('Saved'); refetch(); } catch(e){toast.err(e.message);} finally{setSaving(false);} };
+  return <>
+    <div className="topbar"><div><h1 className="page-title">Settings</h1><div className="page-sub">Workspace configuration</div></div></div>
+    <div className="content" style={{maxWidth:520}}>
+      <div className="card" style={{marginBottom:14}}>
+        <div style={{fontFamily:'var(--mono)',fontSize:10,textTransform:'uppercase',letterSpacing:'.08em',color:'var(--t3)',marginBottom:14}}>Your Profile</div>
+        <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:12}}>
+          <div className="av" style={{width:44,height:44,fontSize:15}}>{user?.avatar?<img src={user.avatar} alt=""/>:user?.name?.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase()}</div>
+          <div>
+            <div style={{fontWeight:600,fontSize:15}}>{user?.name}</div>
+            <div style={{color:'var(--t3)',fontSize:12}}>{user?.email}</div>
+            <div style={{marginTop:4}}><span className="badge" style={{background:'var(--s3)',color:'var(--t2)',border:'1px solid var(--b1)'}}>{user?.role}</span>
+            {user?.provider!=='local'&&<span className="badge" style={{marginLeft:5,background:'var(--ac2)',color:'var(--ac)',border:'1px solid var(--acb)'}}>{user?.provider}</span>}</div>
+          </div>
+        </div>
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,padding:12,background:'var(--s2)',borderRadius:'var(--r)',border:'1px solid var(--b1)'}}>
+          {[['Tenant ID',user?.organization?.tenantId],['Plan',user?.organization?.plan||'free']].map(([l,v])=>(
+            <div key={l}><div style={{fontFamily:'var(--mono)',fontSize:9,color:'var(--t3)',textTransform:'uppercase',letterSpacing:'.06em',marginBottom:2}}>{l}</div>
+            <div style={{fontFamily:'var(--mono)',fontSize:10,color:'var(--t2)',wordBreak:'break-all'}}>{v||'—'}</div></div>
+          ))}
+        </div>
+      </div>
+      {isAdmin&&<div className="card" style={{marginBottom:14}}>
+        <div style={{fontFamily:'var(--mono)',fontSize:10,textTransform:'uppercase',letterSpacing:'.08em',color:'var(--t3)',marginBottom:14}}>Organization</div>
+        <div className="fg"><label className="fl">Name</label><input className="inp" value={orgName} onChange={e=>setOrgName(e.target.value)}/></div>
+        <div style={{display:'flex',justifyContent:'flex-end'}}><button className="btn btn-p" onClick={save} disabled={saving||!orgName}>{saving?<span className="spin"/>:null}Save</button></div>
+      </div>}
+      <div className="card" style={{borderColor:'var(--acb)',background:'var(--ac2)'}}>
+        <div style={{fontFamily:'var(--mono)',fontSize:10,textTransform:'uppercase',letterSpacing:'.08em',color:'var(--ac)',marginBottom:12}}>RBAC Permissions</div>
+        <table style={{width:'100%',fontSize:11,borderCollapse:'collapse'}}>
+          <thead><tr>{['Permission','Viewer','Member','Admin','Owner'].map(h=><th key={h} style={{textAlign:'left',padding:'3px 8px',fontFamily:'var(--mono)',fontSize:9,color:'var(--t3)',textTransform:'uppercase'}}>{h}</th>)}</tr></thead>
+          <tbody>{[
+            ['View own tasks','✓','✓','✓','✓'],['Create tasks','✗','✓','✓','✓'],
+            ['Edit own tasks','✗','✓','✓','✓'],['Edit any task','✗','✗','✓','✓'],
+            ['Manage members','✗','✗','✓','✓'],['View audit log','✗','✗','✓','✓'],
+            ['Remove members','✗','✗','✗','✓'],
+          ].map(([p,...vs])=>(
+            <tr key={p} style={{borderTop:'1px solid var(--b1)'}}>
+              <td style={{padding:'5px 8px',color:'var(--t2)'}}>{p}</td>
+              {vs.map((v,i)=><td key={i} style={{padding:'5px 8px',fontFamily:'var(--mono)',color:v==='✓'?'var(--ac)':'var(--t3)'}}>{v}</td>)}
+            </tr>
+          ))}</tbody>
+        </table>
+      </div>
+    </div>
+  </>;
+}
+
+// ─── Shell ────────────────────────────────────────────────────────────────────
+function Shell() {
+  const { user, logout, isAdmin } = useAuth();
+  const [route, go] = useRoute();
+  const init = user?.name?.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase();
+
+  const nav = (r,label,icon) => (
+    <button className={`nav-i${route===r?' active':''}`} onClick={()=>go(r)}>{icon} {label}</button>
+  );
+
+  const page = route==='/members'?<MembersPage/>:route==='/audit'?<AuditPage/>:route==='/settings'?<SettingsPage/>:<TasksPage/>;
+
+  return <div className="shell">
+    <aside className="sidebar">
+      <div className="logo">
+        <div className="logo-txt">{IC.zap}<span>Task</span>Forge</div>
+        <div className="org-nm">{user?.organization?.name}</div>
+      </div>
+      <nav className="nav">
+        <div className="nav-lbl">Workspace</div>
+        {nav('/tasks','Tasks',IC.check)}
+        {isAdmin&&nav('/members','Members',IC.users)}
+        {isAdmin&&nav('/audit','Audit Log',IC.log)}
+        <div className="nav-lbl" style={{marginTop:16}}>Account</div>
+        {nav('/settings','Settings',IC.cog)}
+      </nav>
+      <div className="sidebar-foot">
+        <div className="u-chip" onClick={async()=>{ await logout(); window.location.hash='/login'; }}>
+          <div className="av">{user?.avatar?<img src={user.avatar} alt=""/>:init}</div>
+          <div style={{flex:1,minWidth:0}}>
+            <div className="u-name">{user?.name}</div>
+            <div className={`u-role ${user?.role}`}>{user?.role}</div>
+          </div>
+          {IC.out}
+        </div>
+      </div>
+    </aside>
+    <main className="main">{page}</main>
+  </div>;
+}
+
+// ─── Auth Pages ───────────────────────────────────────────────────────────────
+function LoginPage({ onSwitch }) {
+  const { login } = useAuth();
+  const [f, setF] = useState({email:'',password:''});
+  const [loading, setLoading] = useState(false);
+  const s = k => e => setF(p=>({...p,[k]:e.target.value}));
+  const submit = async e => {
+    e.preventDefault(); setLoading(true);
+    try { await login(f.email, f.password); window.location.hash='/tasks'; toast.ok('Welcome back!'); }
+    catch(err){ toast.err(err.message); } finally { setLoading(false); }
+  };
+  return <div className="auth-page"><div className="auth-card">
+    <div className="auth-logo">{IC.zap} Task<span>Forge</span></div>
+    <div className="auth-sub">Sign in to your workspace</div>
+    <a href="/api/auth/google" className="oauth-btn">
+      <svg width="15" height="15" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+      Continue with Google
+    </a>
+    <a href="/api/auth/github" className="oauth-btn">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0112 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/></svg>
+      Continue with GitHub
+    </a>
+    <div className="auth-div">or</div>
+    <form onSubmit={submit}>
+      <div className="fg"><label className="fl">Email</label><input type="email" className="inp" value={f.email} onChange={s('email')} placeholder="you@example.com" required autoFocus/></div>
+      <div className="fg"><label className="fl">Password</label><input type="password" className="inp" value={f.password} onChange={s('password')} placeholder="••••••••" required/></div>
+      <button type="submit" className="btn btn-p" style={{width:'100%',justifyContent:'center'}} disabled={loading}>{loading?<span className="spin"/>:'Sign In'}</button>
+    </form>
+    <div className="auth-sw">No account? <a onClick={onSwitch}>Create workspace</a></div>
+  </div></div>;
+}
+
+function RegisterPage({ onSwitch }) {
+  const { register } = useAuth();
+  const [f, setF] = useState({name:'',email:'',password:'',orgName:''});
+  const [loading, setLoading] = useState(false);
+  const s = k => e => setF(p=>({...p,[k]:e.target.value}));
+  const submit = async e => {
+    e.preventDefault(); setLoading(true);
+    try { await register(f.name, f.email, f.password, f.orgName); window.location.hash='/tasks'; toast.ok('Workspace created!'); }
+    catch(err){ toast.err(err.message); } finally { setLoading(false); }
+  };
+  return <div className="auth-page"><div className="auth-card">
+    <div className="auth-logo">{IC.zap} Task<span>Forge</span></div>
+    <div className="auth-sub">Create your workspace</div>
+    <form onSubmit={submit}>
+      <div className="fg"><label className="fl">Your Name</label><input className="inp" value={f.name} onChange={s('name')} placeholder="Full name" required autoFocus/></div>
+      <div className="fg"><label className="fl">Email</label><input type="email" className="inp" value={f.email} onChange={s('email')} placeholder="you@company.com" required/></div>
+      <div className="fg"><label className="fl">Password</label><input type="password" className="inp" value={f.password} onChange={s('password')} placeholder="8+ characters" required minLength={8}/></div>
+      <div className="fg"><label className="fl">Organization Name</label><input className="inp" value={f.orgName} onChange={s('orgName')} placeholder="Acme Corp" required/></div>
+      <button type="submit" className="btn btn-p" style={{width:'100%',justifyContent:'center'}} disabled={loading}>{loading?<span className="spin"/>:'Create Workspace'}</button>
+    </form>
+    <div className="auth-sw">Have an account? <a onClick={onSwitch}>Sign in</a></div>
+  </div></div>;
+}
+
+function OAuthCallback() {
+  const { handleOAuthCallback } = useAuth();
+  const { refetch } = useAuth();
+  useEffect(()=>{
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('token'), refresh = params.get('refresh');
+    if (token && refresh) {
+      localStorage.setItem('tf_token', token); localStorage.setItem('tf_refresh', refresh);
+      refetch().then(()=>{ window.location.hash='/tasks'; toast.ok('Signed in!'); });
+    } else { window.location.hash='/login'; toast.err('OAuth failed'); }
+  },[]);
+  return <div style={{height:'100vh',display:'flex',alignItems:'center',justifyContent:'center',flexDirection:'column',gap:16}}>
+    <div style={{fontFamily:'var(--mono)',fontSize:18,color:'var(--t3)'}}>Task<span style={{color:'var(--ac)'}}>Forge</span></div>
+    <div className="spin" style={{width:28,height:28}}/>
+  </div>;
+}
+
+// ─── Root ─────────────────────────────────────────────────────────────────────
+function Root() {
+  const { user, loading } = useAuth();
+  const [route, go] = useRoute();
+  const [authView, setAuthView] = useState('login');
+
+  if (loading) return <div style={{height:'100vh',display:'flex',alignItems:'center',justifyContent:'center',flexDirection:'column',gap:16}}>
+    <div style={{fontFamily:'var(--mono)',fontSize:18}}>Task<span style={{color:'var(--ac)'}}>Forge</span></div>
+    <div className="spin" style={{width:28,height:28}}/>
+  </div>;
+
+  // OAuth callback
+  if (window.location.search.includes('token=')) return <OAuthCallback/>;
+
+  if (!user) {
+    return authView==='login'
+      ? <LoginPage onSwitch={()=>setAuthView('register')}/>
+      : <RegisterPage onSwitch={()=>setAuthView('login')}/>;
+  }
+
+  return <Shell/>;
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(
+  <AuthProvider><Root/><Toasts/></AuthProvider>
+);
+</script>
+</body>
+</html>
