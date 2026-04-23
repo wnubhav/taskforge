@@ -1,0 +1,28 @@
+version: '3.9'
+services:
+  mongo:
+    image: mongo:7
+    volumes: [mongo_data:/data/db]
+    networks: [app]
+    healthcheck:
+      test: ["CMD","mongosh","--eval","db.adminCommand('ping')"]
+      interval: 10s; timeout: 5s; retries: 5; start_period: 20s
+
+  backend:
+    build: ./backend
+    env_file: ./backend/.env
+    environment:
+      MONGO_URI: mongodb://mongo:27017/taskforge
+      FRONTEND_URL: http://localhost
+    depends_on:
+      mongo: {condition: service_healthy}
+    networks: [app]
+
+  frontend:
+    build: ./frontend
+    ports: ["80:80"]
+    depends_on: [backend]
+    networks: [app]
+
+networks: {app: {driver: bridge}}
+volumes: {mongo_data:}
