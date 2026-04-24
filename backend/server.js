@@ -232,11 +232,25 @@ A.post('/logout', auth, async (req, res) => {
 
 A.get('/me', auth, (req, res) => res.json({ user: req.user }));
 
-// OAuth
-A.get('/google', passport.authenticate('google', { scope: ['profile', 'email'], session: false }));
-A.get('/google/callback', passport.authenticate('google', { session: false, failureRedirect: `${FRONTEND}/login?error=1` }), oauthSuccess);
-A.get('/github', passport.authenticate('github', { session: false }));
-A.get('/github/callback', passport.authenticate('github', { session: false, failureRedirect: `${FRONTEND}/login?error=1` }), oauthSuccess);
+// OAuth — only register routes if the strategy was actually configured
+const notConfigured = (name) => (req, res) =>
+  res.status(501).json({ message: `${name} OAuth is not configured on this server` });
+
+if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_ID !== 'your_google_client_id') {
+  A.get('/google', passport.authenticate('google', { scope: ['profile', 'email'], session: false }));
+  A.get('/google/callback', passport.authenticate('google', { session: false, failureRedirect: `${FRONTEND}/login?error=1` }), oauthSuccess);
+} else {
+  A.get('/google', notConfigured('Google'));
+  A.get('/google/callback', notConfigured('Google'));
+}
+
+if (process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_ID !== 'your_github_client_id') {
+  A.get('/github', passport.authenticate('github', { session: false }));
+  A.get('/github/callback', passport.authenticate('github', { session: false, failureRedirect: `${FRONTEND}/login?error=1` }), oauthSuccess);
+} else {
+  A.get('/github', notConfigured('GitHub'));
+  A.get('/github/callback', notConfigured('GitHub'));
+}
 
 // ─── Task Routes ──────────────────────────────────────────────────────────────
 const T = express.Router();
