@@ -302,7 +302,8 @@ T.post('/', role('member','admin','owner'), async (req, res) => {
       title, description, status, priority, assignedTo, labels, dueDate, estimatedHours,
       organization: req.orgId, createdBy: req.user._id
     });
-    await task.populate(['createdBy','assignedTo'], 'name email avatar');
+    await task.populate('createdBy', 'name email avatar');
+    await task.populate('assignedTo', 'name email avatar');
     log(req, 'task.created', 'task', task._id, task.title, { after: { title, status, priority } });
     res.status(201).json({ task });
   } catch (e) { res.status(500).json({ message: e.message }); }
@@ -317,7 +318,8 @@ T.patch('/:id', role('member','admin','owner'), async (req, res) => {
     const before = {}, after = {};
     fields.forEach(f => { if (req.body[f] !== undefined) { before[f] = task[f]; task[f] = req.body[f]; after[f] = req.body[f]; }});
     await task.save();
-    await task.populate(['createdBy','assignedTo'], 'name email avatar');
+    await task.populate('createdBy', 'name email avatar');
+    await task.populate('assignedTo', 'name email avatar');
     log(req, 'task.updated', 'task', task._id, task.title, { before, after });
     res.json({ task });
   } catch (e) { res.status(500).json({ message: e.message }); }
